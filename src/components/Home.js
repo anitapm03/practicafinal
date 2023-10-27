@@ -1,20 +1,22 @@
 import React, { Component } from 'react';
 import Global from '../Global';
 import axios from 'axios';
-import Empleados from './Empleados';
 import { NavLink } from 'react-router-dom';
 import { event } from 'jquery';
+import Trabajadores from './Trabajadores';
 
 export default class Home extends Component {
 
     urlApi = Global.urlApi;
 
     selectHospitales = React.createRef();
+    cajaIncremento = React.createRef();
 
     state = {
         hospitales: [],
         status: false,
-        seleccionados: ""
+        seleccionados: [],
+        statusUpdate: false
     }
 
     componentDidMount = () => {
@@ -39,16 +41,60 @@ export default class Home extends Component {
 
     mostrarSeleccionados = (e) => {
         e.preventDefault();
+
+        var aux = this.getHospitalesSeleccionados();
+        
+        this.setState({
+            seleccionados: aux
+        })
         
     }
 
-    crearArray = (event) => {
-        const selectedOptions = Array.from(event.target.selectedOptions).map(option => option.value);
-        this.setState({
-            seleccionados: selectedOptions
-        });
-        //console.log(this.state.seleccionados);
+    getHospitalesSeleccionados = (e) => {
+        if (e!=null){
+            e.preventDefault();
+        }
+        
+        var options = this.selectHospitales.current.options;
+        var aux = [];
+        //var data = "";
+        for (var opt of options){
+            if (opt.selected == true){
+                //data += opt.value + ",";
+                aux.push(opt.value);
+            }
+        }
+
+        return aux;
     }
+
+    incrementarSalarios = (e) => {
+        if(e != null){
+            e.preventDefault(); 
+        }
+        var hospitales = this.getHospitalesSeleccionados();
+        var incremento = this.cajaIncremento.current.value;
+
+        var request = "api/trabajadores/updatesalariotrabajadoreshospitales?" + "incremento=" + incremento + "&";
+        
+        var data = "";
+
+        for (var id of hospitales){
+            data += "idhospital=" + id + "&";
+        }
+        data = data.substring(0, data.length -1);
+        var url = this.urlApi + request + data;
+
+        axios.put(url).then(response => {
+            this.setState({
+                statusUpdate:true,
+                seleccionados: hospitales,
+                status:true
+            })
+        })
+    }   
+
+
 
   render() {
     return (
@@ -57,7 +103,7 @@ export default class Home extends Component {
 
         <form onSubmit={this.mostrarSeleccionados}>
             <label>Seleccione los hospitales: </label>
-            <select onChange={this.crearArray} className="form-select form-select-lg mb-3 w-50 p-3" ref={this.selectHospitales} multiple>
+            <select className="form-select form-select-lg mb-3 w-50 p-3" ref={this.selectHospitales} multiple>
             {
                 this.state.status == true &&
                 (
@@ -68,14 +114,16 @@ export default class Home extends Component {
             }
             </select>
         
-            <button className='btn btn-outline-success' >Buscar</button>
+            <button className='btn btn-outline-success' onClick={this.mostrarSeleccionados}>Buscar trabajadores</button>
+            <br></br>
+            <input type="number" ref={this.cajaIncremento} className='from-control' />
+            <button className='btn btn-dark' onClick={this.incrementarSalarios}>Incrementar salarios</button>
+        
         </form>
-
-        <h1>{this.state.seleccionados}</h1>
 
         <hr></hr>
 
-        <Empleados idshospital={this.state.seleccionados} />
+        <Trabajadores seleccionados={this.state.seleccionados} />
         
       </div>
     )
